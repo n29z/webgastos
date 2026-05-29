@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casa — Control de Gastos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --border: #e8e7e3;
+    --border-soft: #f0efe9;
+    --text: #1a1a1a;
+    --text-2: #666;
+    --text-3: #999;
+    --text-4: #ccc;
+    --green: #16a34a; --green-light: #f0fdf4; --green-dark: #14532d;
+    --amber: #d97706; --amber-light: #fffbeb; --amber-dark: #78350f;
+    --purple: #7c3aed; --purple-light: #f5f3ff; --purple-dark: #3b0764;
+    --red: #dc2626; --red-light: #fef2f2;
+    --blue: #2563eb; --blue-light: #eff6ff; --blue-dark: #1e3a8a;
+    --rose: #e11d48; --rose-light: #fff1f2; --rose-dark: #881337;
+  }
+
+  html { font-size: 16px; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .container {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  .brand { font-family: 'Fraunces', serif; font-size: 30px; font-weight: 300; letter-spacing: -0.03em; line-height: 1; }
+  .brand-sub { font-size: 11px; color: var(--text-3); letter-spacing: .07em; text-transform: uppercase; margin-top: 4px; }
+
+  /* ── BUTTONS ── */
+  button { font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; outline: none; transition: all .15s; }
+  .btn-primary {
+    background: var(--text); color: #fff;
+    font-size: 13px; font-weight: 500;
+    padding: 9px 18px; border-radius: 8px;
+  }
+  .btn-primary:hover { opacity: .82; }
+  .btn-primary:active { transform: scale(.97); }
+
+  .btn-ghost {
+    background: transparent; color: var(--text-2);
+    font-size: 13px; padding: 8px 14px;
+    border-radius: 8px; border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--bg); }
+
+  .btn-danger {
+    background: transparent; color: var(--red);
+    font-size: 13px; padding: 8px 14px;
+    border-radius: 8px; border: 1px solid #fca5a5;
+  }
+  .btn-danger:hover { background: var(--red-light); }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: flex; align-items: center; gap: 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;
+  }
+  .stat-box { flex: 1; }
+  .stat-val { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 400; line-height: 1; }
+  .stat-lbl { font-size: 11px; color: var(--text-3); margin-top: 3px; text-transform: uppercase; letter-spacing: .05em; }
+  .stat-divider { width: 1px; height: 36px; background: var(--border); flex-shrink: 0; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align: center; padding: 80px 20px; }
+  .empty-icon { font-size: 52px; opacity: .22; margin-bottom: 18px; }
+  .empty-title { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 300; margin-bottom: 10px; }
+  .empty-sub { font-size: 14px; color: var(--text-3); line-height: 1.7; }
+
+  /* ── LIST CARDS ── */
+  .list-grid { display: flex; flex-direction: column; gap: 10px; }
+  .list-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px;
+    cursor: pointer; transition: transform .15s, box-shadow .15s;
+  }
+  .list-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.07); }
+  .list-card-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .list-date { font-size: 13px; color: var(--text-2); }
+  .list-sub-date { font-size: 11px; color: var(--text-4); margin: -6px 0 8px; }
+  .list-total { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 400; }
+  .detail-name { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 300; color: var(--text); margin-bottom: 6px; letter-spacing: -0.02em; }
+  .list-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 100px; }
+
+  /* ── RUNNING TOTAL BAR ── */
+  .running-bar {
+    display: flex; align-items: baseline; justify-content: space-between;
+    background: var(--text); border-radius: 12px; padding: 14px 20px; margin-bottom: 20px;
+  }
+  .running-lbl { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: .06em; }
+  .running-val { font-family: 'Fraunces', serif; font-size: 30px; font-weight: 300; color: #fff; }
+
+  /* ── SECTION CARDS ── */
+  .sec-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 12px; overflow: hidden;
+  }
+  .sec-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 16px;
+  }
+  .sec-header-left { display: flex; align-items: center; gap: 10px; }
+  .sec-icon-badge {
+    width: 30px; height: 30px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .sec-title { font-size: 14px; font-weight: 500; }
+  .sec-subtot { font-size: 14px; font-weight: 500; }
+  .sec-body { padding: 14px 16px; }
+
+  /* ── INPUTS ── */
+  .input-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .inp {
+    height: 36px; padding: 0 12px;
+    border: 1px solid #e0dfd9; border-radius: 8px;
+    background: #fafaf8; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; color: var(--text);
+    outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .inp:focus { border-color: var(--text); box-shadow: 0 0 0 3px rgba(26,26,26,.08); }
+  .inp-name { flex: 1; }
+  .inp-price { width: 110px; text-align: right; }
+  .btn-add {
+    width: 36px; height: 36px; border-radius: 8px;
+    color: #fff; font-size: 22px; line-height: 1;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .btn-add:hover { opacity: .85; }
+  .btn-add:active { transform: scale(.95); }
+
+  /* ── ITEMS LIST ── */
+  .items-list { border-top: 1px solid var(--border-soft); padding-top: 6px; }
+  .item-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 6px; border-radius: 6px; transition: background .1s;
+  }
+  .item-row:hover { background: var(--bg); }
+  .item-idx { font-size: 11px; color: var(--text-4); min-width: 16px; text-align: right; flex-shrink: 0; }
+  .item-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-price { font-size: 13px; font-weight: 500; flex-shrink: 0; }
+  .btn-del {
+    font-size: 18px; color: var(--text-4); background: transparent;
+    width: 24px; height: 24px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .btn-del:hover { color: var(--red); background: var(--red-light); }
+
+  /* ── DETAIL VIEW ── */
+  .detail-hero {
+    text-align: center; padding: 36px 0 28px;
+    border-bottom: 1px solid var(--border); margin-bottom: 24px;
+  }
+  .detail-date { font-size: 12px; color: var(--text-3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px; }
+  .detail-total { font-family: 'Fraunces', serif; font-size: 52px; font-weight: 300; line-height: 1; }
+  .detail-total-lbl { font-size: 12px; color: var(--text-4); margin-top: 8px; }
+  .detail-section { margin-bottom: 22px; }
+  .detail-sec-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; font-weight: 500;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border-soft); margin-bottom: 4px;
+  }
+  .detail-sec-total { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 400; }
+  .detail-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 6px; border-radius: 6px; transition: background .1s;
+  }
+  .detail-item:hover { background: var(--bg); }
+
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 0; margin-bottom: 28px; border-bottom: 1px solid var(--border); }
+  .tab-btn {
+    flex: 1; padding: 12px 8px; background: transparent; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    color: var(--text-3); cursor: pointer; transition: color .15s;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--text-2); }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--text); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .panel-title { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 300; letter-spacing: -0.02em; }
+  .panel-stats { display: flex; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; }
+  .panel-stat-val { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 400; line-height: 1; }
+  .panel-stat-lbl { font-size: 11px; color: var(--text-3); margin-top: 2px; text-transform: uppercase; letter-spacing: .05em; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .list-card, .sec-card, .detail-section { animation: fadeIn .2s ease both; }
+  .item-row { animation: fadeIn .15s ease both; }
+
+  /* ── NEW TITLE ── */
+  .new-title { margin-bottom: 20px; }
+  .inp-list-name {
+    width: 100%; border: none; outline: none; background: transparent;
+    font-family: 'Fraunces', serif; font-size: 30px; font-weight: 300;
+    letter-spacing: -0.03em; color: var(--text);
+    padding: 0 0 4px; border-bottom: 2px solid var(--border);
+    transition: border-color .2s;
+  }
+  .inp-list-name::placeholder { color: var(--text-4); }
+  .inp-list-name:focus { border-bottom-color: var(--text); }
+
+  /* ── HEADER BUTTONS ROW ── */
+  .header-btns { display: flex; gap: 8px; }
+
+  /* ── PIE CHART ── */
+  .chart-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 20px 16px;
+    margin-bottom: 24px; display: flex; flex-direction: column; align-items: center;
+  }
+  .chart-title {
+    font-size: 11px; color: var(--text-3); text-transform: uppercase;
+    letter-spacing: .07em; margin-bottom: 16px; align-self: flex-start;
+  }
+  .chart-canvas-wrap { position: relative; width: 200px; height: 200px; }
+  .chart-legend { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; width: 100%; }
+  .legend-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .legend-left { display: flex; align-items: center; gap: 8px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-label { font-size: 13px; color: var(--text-2); }
+  .legend-pct { font-size: 12px; color: var(--text-3); }
+  .legend-val { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 400; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, setDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDWRsiOmsM5ivzlT9g51ZDTBmdnbqeTBcc",
+    authDomain: "lake-gastos.firebaseapp.com",
+    projectId: "lake-gastos",
+    storageBucket: "lake-gastos.firebasestorage.app",
+    messagingSenderId: "688355914444",
+    appId: "1:688355914444:web:69b11d47d95916db404869",
+    measurementId: "G-PTQCEK1E9Y"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db_fire = getFirestore(app);
+
+  // Expose Firestore helpers to global scope
+  window._firestore = {
+    async saveList(apartado, lista) {
+      await setDoc(doc(db_fire, apartado, String(lista.id)), lista);
+    },
+    async deleteList(apartado, id) {
+      await deleteDoc(doc(db_fire, apartado, String(id)));
+    },
+    listenAll(callback) {
+      const apartados = ['hogar', 'impuestos', 'extra'];
+      let loaded = 0;
+      const result = { hogar: [], impuestos: [], extra: [] };
+      apartados.forEach(ap => {
+        onSnapshot(collection(db_fire, ap), snapshot => {
+          result[ap] = snapshot.docs.map(d => d.data()).sort((a,b) => b.id - a.id);
+          loaded++;
+          callback({ ...result });
+        });
+      });
+    }
+  };
+
+  // Signal ready
+  window._firestoreReady = true;
+  document.dispatchEvent(new Event('firestore-ready'));
+</script>
+</head>
+<body>
+
+<!-- ══ HOME ══════════════════════════════════════════════ -->
+<div id="loading-overlay" style="display:flex;position:fixed;inset:0;background:rgba(248,247,244,.92);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+  <div style="font-family:'Fraunces',serif;font-size:28px;font-weight:300;color:#1a1a1a">Casa</div>
+  <div style="font-size:13px;color:#999;font-family:'DM Sans',sans-serif">Cargando datos...</div>
+</div>
+<div id="page-home" class="page active">
+  <div class="container">
+    <header class="header">
+      <div>
+        <div class="brand">Casa</div>
+        <div class="brand-sub">control de gastos</div>
+      </div>
+      <button class="btn-primary" id="btn-new-list" onclick="startNew()">+ Nueva lista</button>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('hogar')">🏠 Hogar</button>
+      <button class="tab-btn" onclick="switchTab('impuestos')">🏛 Impuestos</button>
+      <button class="tab-btn" onclick="switchTab('extra')">＋ Gastos extra</button>
+    </div>
+
+    <!-- TAB HOGAR -->
+    <div class="tab-panel active" id="tab-hogar">
+      <div id="stats-row-hogar" class="stats-row" style="display:none">
+        <div class="stat-box"><div class="stat-val" id="stat-count-hogar">0</div><div class="stat-lbl">listas</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat-box"><div class="stat-val" id="stat-total-hogar">$0</div><div class="stat-lbl">total histórico</div></div>
+      </div>
+      <div id="empty-hogar" class="empty-state">
+        <div class="empty-icon">⌂</div>
+        <div class="empty-title">Empezá tu primera lista</div>
+        <div class="empty-sub">Supermercado, remodelación<br>y artículos nuevos.</div>
+      </div>
+      <div id="grid-hogar" class="list-grid" style="display:none"></div>
+    </div>
+
+    <!-- TAB IMPUESTOS -->
+    <div class="tab-panel" id="tab-impuestos">
+      <div id="stats-row-impuestos" class="stats-row" style="display:none">
+        <div class="stat-box"><div class="stat-val" id="stat-count-impuestos">0</div><div class="stat-lbl">listas</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat-box"><div class="stat-val" id="stat-total-impuestos">$0</div><div class="stat-lbl">total histórico</div></div>
+      </div>
+      <div id="empty-impuestos" class="empty-state">
+        <div class="empty-icon">🏛</div>
+        <div class="empty-title">Sin impuestos registrados</div>
+        <div class="empty-sub">ABL, ingresos brutos, autónomos<br>y cualquier impuesto o servicio.</div>
+      </div>
+      <div id="grid-impuestos" class="list-grid" style="display:none"></div>
+    </div>
+
+    <!-- TAB GASTOS EXTRA -->
+    <div class="tab-panel" id="tab-extra">
+      <div id="stats-row-extra" class="stats-row" style="display:none">
+        <div class="stat-box"><div class="stat-val" id="stat-count-extra">0</div><div class="stat-lbl">listas</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat-box"><div class="stat-val" id="stat-total-extra">$0</div><div class="stat-lbl">total histórico</div></div>
+      </div>
+      <div id="empty-extra" class="empty-state">
+        <div class="empty-icon">＋</div>
+        <div class="empty-title">Sin gastos extra</div>
+        <div class="empty-sub">Veterinario, regalos, salidas<br>y cualquier gasto puntual.</div>
+      </div>
+      <div id="grid-extra" class="list-grid" style="display:none"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ NEW / EDIT ═════════════════════════════════════════ -->
+<div id="page-new" class="page">
+  <div class="container">
+    <header class="header">
+      <button class="btn-ghost" onclick="goHome()">← Volver</button>
+      <button class="btn-primary" onclick="saveList()">Guardar lista</button>
+    </header>
+
+    <div class="new-title">
+      <div class="brand-sub" id="new-apartado-label" style="margin-bottom:6px"></div>
+      <input id="inp-list-name" class="inp-list-name" placeholder="Nombre de la lista..." autocomplete="off">
+      <div class="brand-sub" id="new-date"></div>
+    </div>
+
+    <div class="running-bar">
+      <span class="running-lbl">Total acumulado</span>
+      <span class="running-val" id="running-total">$0,00</span>
+    </div>
+
+    <!-- Supermercado -->
+    <div class="sec-card">
+      <div class="sec-header" style="border-bottom: 2px solid var(--green)">
+        <div class="sec-header-left">
+          <div class="sec-icon-badge" style="background:var(--green-light);color:var(--green)">🛒</div>
+          <span class="sec-title">Supermercado</span>
+        </div>
+        <span class="sec-subtot" id="subtot-super" style="color:var(--green);display:none"></span>
+      </div>
+      <div class="sec-body">
+        <div class="input-row">
+          <input class="inp inp-name" id="inp-n-super" placeholder="Nombre del producto..." onkeydown="handleKey(event,'super')">
+          <input class="inp inp-price" id="inp-p-super" type="number" min="0" step="any" placeholder="$ precio" onkeydown="handleKey(event,'super')">
+          <button class="btn-add" style="background:var(--green)" onclick="addItem('super')">+</button>
+        </div>
+        <div class="items-list" id="items-super"></div>
+      </div>
+    </div>
+
+    <!-- Remodelación -->
+    <div class="sec-card">
+      <div class="sec-header" style="border-bottom: 2px solid var(--amber)">
+        <div class="sec-header-left">
+          <div class="sec-icon-badge" style="background:var(--amber-light);color:var(--amber)">🔨</div>
+          <span class="sec-title">Remodelación</span>
+        </div>
+        <span class="sec-subtot" id="subtot-remod" style="color:var(--amber);display:none"></span>
+      </div>
+      <div class="sec-body">
+        <div class="input-row">
+          <input class="inp inp-name" id="inp-n-remod" placeholder="Descripción del gasto..." onkeydown="handleKey(event,'remod')">
+          <input class="inp inp-price" id="inp-p-remod" type="number" min="0" step="any" placeholder="$ costo" onkeydown="handleKey(event,'remod')">
+          <button class="btn-add" style="background:var(--amber)" onclick="addItem('remod')">+</button>
+        </div>
+        <div class="items-list" id="items-remod"></div>
+      </div>
+    </div>
+
+    <!-- Artículos nuevos -->
+    <div class="sec-card">
+      <div class="sec-header" style="border-bottom: 2px solid var(--purple)">
+        <div class="sec-header-left">
+          <div class="sec-icon-badge" style="background:var(--purple-light);color:var(--purple)">✦</div>
+          <span class="sec-title">Artículos nuevos</span>
+        </div>
+        <span class="sec-subtot" id="subtot-nuevo" style="color:var(--purple);display:none"></span>
+      </div>
+      <div class="sec-body">
+        <div class="input-row">
+          <input class="inp inp-name" id="inp-n-nuevo" placeholder="Artículo (ej. Heladera, Mesa)..." onkeydown="handleKey(event,'nuevo')">
+          <input class="inp inp-price" id="inp-p-nuevo" type="number" min="0" step="any" placeholder="$ precio" onkeydown="handleKey(event,'nuevo')">
+          <button class="btn-add" style="background:var(--purple)" onclick="addItem('nuevo')">+</button>
+        </div>
+        <div class="items-list" id="items-nuevo"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DETAIL ══════════════════════════════════════════════ -->
+<div id="page-detail" class="page">
+  <div class="container">
+    <header class="header">
+      <button class="btn-ghost" onclick="goHome()">← Volver</button>
+      <div class="header-btns">
+        <button class="btn-ghost" id="btn-edit" onclick="editCurrent()">Editar</button>
+        <button class="btn-danger" id="btn-del-list" onclick="deleteCurrentList()">Eliminar</button>
+      </div>
+    </header>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<script>
+const SECTIONS = [
+  { id: 'super', label: 'Supermercado',    icon: '🛒', accent: 'var(--green)',  light: 'var(--green-light)',  dark: 'var(--green-dark)'  },
+  { id: 'remod', label: 'Remodelación',    icon: '🔨', accent: 'var(--amber)',  light: 'var(--amber-light)',  dark: 'var(--amber-dark)'  },
+  { id: 'nuevo', label: 'Artículos nuevos',icon: '✦',  accent: 'var(--purple)', light: 'var(--purple-light)', dark: 'var(--purple-dark)' },
+];
+
+const fmt = n => '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const todayStr = () => new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+// ── STATE ────────────────────────────────────────────────
+const APARTADOS = ['hogar','impuestos','extra'];
+let db = { hogar: [], impuestos: [], extra: [] };
+let current = null;
+let selectedId = null;
+let activeApartado = 'hogar';
+let _appReady = false;
+
+function persist() {
+  if (window._firestore && current === null) return; // handled per-save
+}
+
+function showLoading(show) {
+  document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+}
+
+// Init Firestore listener
+function initFirestore() {
+  showLoading(true);
+  window._firestore.listenAll(data => {
+    db = data;
+    if (!_appReady) {
+      _appReady = true;
+      showLoading(false);
+      renderHome();
+      showPage('home');
+    } else {
+      renderHome();
+      // refresh detail if open
+      if (document.getElementById('page-detail').classList.contains('active') && selectedId) {
+        const lista = Object.values(db).flat().find(l => l.id === selectedId);
+        if (lista) openDetail(selectedId);
+      }
+    }
+  });
+}
+
+document.addEventListener('firestore-ready', () => { initFirestore(); });
+// fallback if already ready
+if (window._firestoreReady) initFirestore();
+
+// ── NAVIGATION ───────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function goHome() { renderHome(); showPage('home'); }
+
+// ── HOME ─────────────────────────────────────────────────
+function switchTab(ap) {
+  activeApartado = ap;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', APARTADOS[i]===ap));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+ap).classList.add('active');
+  renderPanel(ap);
+}
+
+function renderHome() { APARTADOS.forEach(renderPanel); }
+
+function renderPanel(ap) {
+  const lst = db[ap] || [];
+  const statsRow = document.getElementById('stats-row-'+ap);
+  const emptyEl  = document.getElementById('empty-'+ap);
+  const gridEl   = document.getElementById('grid-'+ap);
+
+  if (lst.length === 0) {
+    statsRow.style.display = 'none';
+    emptyEl.style.display  = 'block';
+    gridEl.style.display   = 'none';
+    return;
+  }
+
+  const tot = lst.reduce((a,l) => a+(l.total||0), 0);
+  document.getElementById('stat-count-'+ap).textContent = lst.length;
+  document.getElementById('stat-total-'+ap).textContent = fmt(tot);
+  statsRow.style.display = 'flex';
+  emptyEl.style.display  = 'none';
+  gridEl.style.display   = 'flex';
+
+  gridEl.innerHTML = lst.map(l => {
+    const chips = SECTIONS.map(s => {
+      const items = l.items[s.id] || [];
+      if (!items.length) return '';
+      const sub = items.reduce((a,i) => a+i.price, 0);
+      return `<span class="chip" style="background:${s.light};color:${s.dark}">${s.icon} ${s.label} · ${fmt(sub)}</span>`;
+    }).join('');
+    return `
+      <div class="list-card" onclick="openDetail(${l.id})">
+        <div class="list-card-top">
+          <span class="list-date">${l.name ? escHtml(l.name) : l.date}</span>
+          <span class="list-total">${fmt(l.total)}</span>
+        </div>
+        ${l.name ? `<div class="list-sub-date">${l.date}</div>` : ''}
+        <div class="list-chips">${chips}</div>
+      </div>`;
+  }).join('');
+}
+
+// ── NEW ──────────────────────────────────────────────────
+function startNew() {
+  current = { id: Date.now(), name: '', date: todayStr(), apartado: activeApartado, items: { super: [], remod: [], nuevo: [] }, total: 0 };
+  renderNewPage();
+  showPage('new');
+  setTimeout(() => document.getElementById('inp-list-name').focus(), 50);
+}
+
+function renderNewPage() {
+  document.getElementById('inp-list-name').value = current.name || '';
+  document.getElementById('new-date').textContent = current.date;
+  const apLabels = { hogar: '🏠 Hogar', impuestos: '🏛 Impuestos', extra: '＋ Gastos extra' };
+  document.getElementById('new-apartado-label').textContent = apLabels[current.apartado || activeApartado] || '';
+  SECTIONS.forEach(s => {
+    renderSecItems(s.id);
+    updateSecSubtot(s.id);
+  });
+  updateRunning();
+}
+
+function handleKey(e, sec) { if (e.key === 'Enter') addItem(sec); }
+
+function addItem(sec) {
+  const nEl = document.getElementById('inp-n-' + sec);
+  const pEl = document.getElementById('inp-p-' + sec);
+  const name  = nEl.value.trim();
+  const price = parseFloat(pEl.value);
+  if (!name || isNaN(price) || price <= 0) {
+    (name ? pEl : nEl).focus(); return;
+  }
+  current.items[sec].push({ id: Date.now(), name, price });
+  nEl.value = ''; pEl.value = '';
+  nEl.focus();
+  renderSecItems(sec);
+  updateSecSubtot(sec);
+  updateRunning();
+}
+
+function removeItem(sec, id) {
+  current.items[sec] = current.items[sec].filter(i => i.id !== id);
+  renderSecItems(sec);
+  updateSecSubtot(sec);
+  updateRunning();
+}
+
+function renderSecItems(sec) {
+  const el = document.getElementById('items-' + sec);
+  const items = current.items[sec];
+  if (!items.length) { el.innerHTML = ''; return; }
+  el.innerHTML = items.map((item, idx) => `
+    <div class="item-row">
+      <span class="item-idx">${idx + 1}</span>
+      <span class="item-name">${escHtml(item.name)}</span>
+      <span class="item-price">${fmt(item.price)}</span>
+      <button class="btn-del" onclick="removeItem('${sec}', ${item.id})">×</button>
+    </div>`).join('');
+}
+
+function updateSecSubtot(sec) {
+  const total = current.items[sec].reduce((a, i) => a + i.price, 0);
+  const el = document.getElementById('subtot-' + sec);
+  if (total > 0) { el.textContent = fmt(total); el.style.display = 'inline'; }
+  else { el.style.display = 'none'; }
+}
+
+function updateRunning() {
+  const total = SECTIONS.reduce((a, s) => a + current.items[s.id].reduce((b, i) => b + i.price, 0), 0);
+  document.getElementById('running-total').textContent = fmt(total);
+}
+
+async function saveList() {
+  current.name = document.getElementById('inp-list-name').value.trim();
+  const total = SECTIONS.reduce((a, s) => a + current.items[s.id].reduce((b, i) => b + i.price, 0), 0);
+  current.total = total;
+  const ap = current.apartado || activeApartado;
+  showLoading(true);
+  await window._firestore.saveList(ap, current);
+  showLoading(false);
+  current = null;
+  showPage('home');
+}
+
+// ── DETAIL ───────────────────────────────────────────────
+let pieChart = null;
+
+function openDetail(id) {
+  selectedId = id;
+  const lista = Object.values(db).flat().find(l => l.id === id);
+  if (!lista) return;
+
+  const activeSecs = SECTIONS.filter(s => (lista.items[s.id] || []).length > 0);
+  const totals = activeSecs.map(s => lista.items[s.id].reduce((a, i) => a + i.price, 0));
+  const grandTotal = totals.reduce((a, v) => a + v, 0);
+
+  const chartColors   = { super: '#16a34a', remod: '#d97706', nuevo: '#7c3aed' };
+  const chartColorsLt = { super: '#bbf7d0', remod: '#fde68a', nuevo: '#ddd6fe' };
+
+  const legendItems = activeSecs.map((s, i) => {
+    const pct = grandTotal > 0 ? ((totals[i] / grandTotal) * 100).toFixed(1) : '0.0';
+    return `
+      <div class="legend-item">
+        <div class="legend-left">
+          <span class="legend-dot" style="background:${chartColors[s.id]}"></span>
+          <span class="legend-label">${s.icon} ${s.label}</span>
+          <span class="legend-pct">${pct}%</span>
+        </div>
+        <span class="legend-val">${fmt(totals[i])}</span>
+      </div>`;
+  }).join('');
+
+  const chartBlock = activeSecs.length > 0 ? `
+    <div class="chart-wrap">
+      <div class="chart-title">Distribución por sección</div>
+      <div class="chart-canvas-wrap">
+        <canvas id="pie-canvas"></canvas>
+      </div>
+      <div class="chart-legend">${legendItems}</div>
+    </div>` : '';
+
+  const sections = SECTIONS.map(s => {
+    const items = lista.items[s.id] || [];
+    if (!items.length) return '';
+    const sub = items.reduce((a, i) => a + i.price, 0);
+    const rows = items.map((item, idx) => `
+      <div class="detail-item">
+        <span class="item-idx">${idx + 1}</span>
+        <span class="item-name">${escHtml(item.name)}</span>
+        <span class="item-price">${fmt(item.price)}</span>
+      </div>`).join('');
+    return `
+      <div class="detail-section">
+        <div class="detail-sec-head" style="color:${chartColors[s.id]}">
+          <span>${s.icon} ${s.label}</span>
+          <span class="detail-sec-total">${fmt(sub)}</span>
+        </div>
+        ${rows}
+      </div>`;
+  }).join('');
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="detail-hero">
+      ${lista.name ? `<div class="detail-name">${escHtml(lista.name)}</div>` : ''}
+      <div class="detail-date">${lista.date}</div>
+      <div class="detail-total">${fmt(lista.total)}</div>
+      <div class="detail-total-lbl">total de la lista</div>
+    </div>
+    ${chartBlock}
+    ${sections}`;
+
+  showPage('detail');
+
+  if (activeSecs.length > 0) {
+    if (pieChart) { pieChart.destroy(); pieChart = null; }
+    const ctx = document.getElementById('pie-canvas').getContext('2d');
+    pieChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: activeSecs.map(s => s.label),
+        datasets: [{
+          data: totals,
+          backgroundColor: activeSecs.map(s => chartColors[s.id]),
+          hoverBackgroundColor: activeSecs.map(s => chartColorsLt[s.id]),
+          borderWidth: 3,
+          borderColor: '#ffffff',
+          hoverBorderColor: '#ffffff',
+        }]
+      },
+      options: {
+        cutout: '62%',
+        animation: { animateRotate: true, duration: 600, easing: 'easeInOutQuart' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${fmt(ctx.parsed)}  (${((ctx.parsed / grandTotal) * 100).toFixed(1)}%)`
+            },
+            bodyFont: { family: "'DM Sans', sans-serif", size: 13 },
+            padding: 10,
+            cornerRadius: 8,
+          }
+        }
+      }
+    });
+  }
+}
+
+function editCurrent() {
+  const lista = Object.values(db).flat().find(l => l.id === selectedId);
+  if (!lista) return;
+  current = JSON.parse(JSON.stringify(lista));
+  SECTIONS.forEach(s => { if (!current.items[s.id]) current.items[s.id] = []; });
+  renderNewPage();
+  showPage('new');
+}
+
+async function deleteCurrentList() {
+  if (!confirm('¿Eliminar esta lista? No se puede deshacer.')) return;
+  const ap = Object.keys(db).find(k => db[k].some(l => l.id === selectedId));
+  if (ap) {
+    showLoading(true);
+    await window._firestore.deleteList(ap, selectedId);
+    showLoading(false);
+  }
+  showPage('home');
+}
+
+// ── UTILS ────────────────────────────────────────────────
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT: Firestore handles init via event listener ──────
+</script>
+</body>
+</html>
